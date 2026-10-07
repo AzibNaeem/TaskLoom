@@ -1,0 +1,301 @@
+/* Theme tokens. Dark values come from the approved palette (ReactEventProject);
+   light values and semantic colours were approved on 2026-11-07. */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-red: #d20f24;
+  --color-red-hover: #b00d1e;
+  --color-red-text: #f2545f;
+  --color-red-tint: rgba(242, 84, 95, 0.12);
+
+  --color-bg: #0a0a0a;
+  --color-surface: #1a1a1a;
+  --color-surface-hover: #242424;
+  --color-border: #2a2a2a;
+  --color-border-strong: #737373;
+
+  --color-text: #ffffff;
+  --color-text-muted: #9a9a9a;
+  --color-on-red: #ffffff;
+
+  --color-error: #f2545f;
+  --color-warning: #fbbf24;
+  --color-info: #60a5fa;
+  --color-success: #22c55e;
+  --color-focus: #f2545f;
+
+  --priority-low: #9a9a9a;
+  --priority-medium: #60a5fa;
+  --priority-high: #fb923c;
+
+  --label-red: #f87171;
+  --label-orange: #fb923c;
+  --label-yellow: #facc15;
+  --label-green: #4ade80;
+  --label-teal: #2dd4bf;
+  --label-blue: #60a5fa;
+  --label-violet: #a78bfa;
+  --label-pink: #f472b6;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(0, 0, 0, 0.6);
+
+  --radius: 10px;
+  --radius-lg: 16px;
+  --nav-width: 240px;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-red-text: #d20f24;
+  --color-red-tint: rgba(210, 15, 36, 0.06);
+
+  --color-bg: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f0f0;
+  --color-border: #e2e2e2;
+  --color-border-strong: #858585;
+
+  --color-text: #0a0a0a;
+  --color-text-muted: #5f5f5f;
+
+  --color-error: #d20f24;
+  --color-warning: #92400e;
+  --color-info: #1d4ed8;
+  --color-success: #166534;
+  --color-focus: #d20f24;
+
+  --priority-low: #5f5f5f;
+  --priority-medium: #1d4ed8;
+  --priority-high: #9a3412;
+
+  --label-red: #b91c1c;
+  --label-orange: #c2410c;
+  --label-yellow: #a16207;
+  --label-green: #15803d;
+  --label-teal: #0f766e;
+  --label-blue: #2563eb;
+  --label-violet: #7c3aed;
+  --label-pink: #be185d;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --overlay: rgba(0, 0, 0, 0.35);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+h2 {
+  font-size: 1.15rem;
+}
+h3 {
+  font-size: 1rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 38px;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.btn--primary {
+  background-color: var(--color-red);
+  color: var(--color-on-red);
+}
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--color-red-hover);
+}
+.btn--outline {
+  border-color: var(--color-border);
+}
+.btn--outline:hover:not(:disabled),
+.btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+}
+.btn--danger {
+  color: var(--color-error);
+  border-color: var(--color-border);
+}
+.btn--danger:hover:not(:disabled) {
+  background-color: var(--color-red-tint);
+}
+.btn--sm {
+  min-height: 30px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+}
+.btn--icon {
+  min-height: 32px;
+  width: 32px;
+  padding: 0;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.field label,
+.field .field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+}
+textarea.input {
+  resize: vertical;
+  min-height: 90px;
+}
+.input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+  border-color: var(--color-focus);
+}
+.input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+.field-error {
+  color: var(--color-error);
+  font-size: 0.82rem;
+}
+
+/* ---------- Surfaces ---------- */
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: currentColor;
+}
+
+.alert {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  font-size: 0.9rem;
+}
+.alert--error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+.alert--warning {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+.alert--info {
+  border-color: var(--color-info);
+  color: var(--color-info);
+}
+.alert--success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
