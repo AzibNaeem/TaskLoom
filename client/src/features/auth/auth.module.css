@@ -1,0 +1,100 @@
+.page {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.brand {
+  color: var(--color-red-text);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.google {
+  width: 100%;
+}
+
+.switch {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.link {
+  color: var(--color-red-text);
+  font-weight: 600;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+.demo {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+.demo summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.demo ul {
+  list-style: none;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.demo li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.account {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+}

@@ -1,6 +1,7 @@
 import { Link, Navigate, Outlet, createBrowserRouter, useLocation } from 'react-router'
 import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
+import { LoginPage, RegisterPage } from './features/auth/AuthPages'
 import { AppLayout } from './features/workspaces/AppLayout'
 
 function Root() {
@@ -14,6 +15,16 @@ function RequireAuth() {
   const { user } = useAuth()
   const location = useLocation()
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
+  return <Outlet />
+}
+
+function GuestOnly() {
+  const { user } = useAuth()
+  const location = useLocation()
+  if (user) {
+    const next = new URLSearchParams(location.search).get('next')
+    return <Navigate to={next && next.startsWith('/') ? next : '/'} replace />
+  }
   return <Outlet />
 }
 
@@ -36,6 +47,13 @@ export const router = createBrowserRouter([
   {
     element: <Root />,
     children: [
+      {
+        element: <GuestOnly />,
+        children: [
+          { path: '/login', element: <LoginPage /> },
+          { path: '/register', element: <RegisterPage /> },
+        ],
+      },
       {
         element: <RequireAuth />,
         children: [
