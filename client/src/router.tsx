@@ -3,6 +3,8 @@ import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
 import { AppLayout } from './features/workspaces/AppLayout'
+import { WorkspaceLayout } from './features/workspaces/WorkspaceLayout'
+import { HomeRedirect, NewWorkspacePage, WorkspaceSettingsPage } from './features/workspaces/WorkspacePages'
 
 function Root() {
   const { state, retry } = useAuth()
@@ -60,7 +62,15 @@ export const router = createBrowserRouter([
           {
             element: <AppLayout />,
             children: [
-              { path: '/', element: <EmptyState title="No workspace yet">Workspace creation lands next.</EmptyState> },
+              { path: '/', element: <HomeRedirect /> },
+              { path: '/workspaces/new', element: <NewWorkspacePage /> },
+              {
+                path: '/w/:workspaceId',
+                element: <WorkspaceLayout />,
+                children: [
+                  { path: 'settings', element: <WorkspaceSettingsPage /> },
+                ],
+              },
               { path: '*', element: <NotFound /> },
             ],
           },
