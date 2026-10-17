@@ -3,6 +3,7 @@ import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
 import { AppLayout } from './features/workspaces/AppLayout'
+import { ProjectsPage } from './features/workspaces/ProjectsPage'
 import { WorkspaceLayout } from './features/workspaces/WorkspaceLayout'
 import { HomeRedirect, NewWorkspacePage, WorkspaceSettingsPage } from './features/workspaces/WorkspacePages'
 
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
                 path: '/w/:workspaceId',
                 element: <WorkspaceLayout />,
                 children: [
+                  { index: true, element: <ProjectsPage /> },
                   { path: 'settings', element: <WorkspaceSettingsPage /> },
                 ],
               },
