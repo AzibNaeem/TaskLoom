@@ -1,0 +1,264 @@
+/* ---------- Filters ---------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filters > select {
+  width: auto;
+  min-width: 140px;
+  flex: 0 1 auto;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1 1 220px;
+  display: flex;
+  align-items: center;
+}
+
+.searchBox > svg {
+  position: absolute;
+  left: 0.7rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.searchBox > input {
+  padding-left: 2.1rem;
+}
+
+/* ---------- Board ---------- */
+
+.boardWrap {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.board {
+  flex: 1;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-width: 0;
+}
+
+.column {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  max-height: calc(100vh - 220px);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+}
+
+.columnTitle {
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.columnActions {
+  margin-left: auto;
+  display: flex;
+}
+
+.renameForm {
+  display: flex;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.renameForm input {
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+}
+
+.cards {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 60px;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  border: 2px dashed transparent;
+  border-radius: var(--radius);
+  overflow-y: auto;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dropTarget {
+  background-color: var(--color-red-tint);
+  border-color: var(--color-red-text);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: grab;
+}
+
+.card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.dragging {
+  box-shadow: var(--shadow);
+  border-color: var(--color-red-text);
+  cursor: grabbing;
+}
+
+.flash {
+  animation: flash 2.5s ease;
+}
+
+@keyframes flash {
+  0%,
+  40% {
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 2px var(--color-info);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.cardTitle:hover {
+  text-decoration: underline;
+}
+
+.cardLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.overdue {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.today {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.emptyColumn {
+  padding: 1rem 0.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.addTask {
+  justify-content: flex-start;
+}
+
+.addColumn {
+  background-color: transparent;
+  border-style: dashed;
+}
+
+/* ---------- Activity panel ---------- */
+
+.activityPanel {
+  flex: 0 0 320px;
+  padding: 1rem;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 1100px) {
+  .boardWrap {
+    flex-direction: column;
+  }
+  .activityPanel {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 860px) {
+  .column {
+    flex-basis: 260px;
+    max-height: none;
+  }
+}
