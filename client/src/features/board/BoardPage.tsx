@@ -1,24 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { useParams } from 'react-router'
+import { Outlet, useParams } from 'react-router'
 import { api } from '../../api'
 import { qk } from '../../api/queryKeys'
-import { ApiError, type Column, type Label, type Member, type Task } from '../../api/types'
+import { ApiError, type Column, type Label, type Member, type Task, type TaskInput } from '../../api/types'
 import { useToast } from '../../app/toast'
 import { Icon } from '../../components/Icon'
+import { Modal } from '../../components/Modal'
 import { PageHeader } from '../../components/PageHeader'
-import { ErrorState, LoadingState } from '../../components/States'
-import { TaskCardContent } from './TaskCard'
+import { ErrorState, InlineError, LoadingState } from '../../components/States'
+import { TaskFields } from '../tasks/TaskFields'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
+import { TaskCardContent } from './TaskCard'
 import styles from './board.module.css'
 
 export function BoardPage() {
-  const { workspace, can } = useWorkspace()
+  const workspaceContext = useWorkspace()
+  const { workspace, can } = workspaceContext
   const { projectId = '' } = useParams()
 
   const board = useQuery({ queryKey: qk.board(projectId), queryFn: () => api.board.get(projectId) })
   const members = useQuery({ queryKey: qk.members(workspace.id), queryFn: () => api.members.list(workspace.id) })
   const labels = useQuery({ queryKey: qk.labels(workspace.id), queryFn: () => api.labels.list(workspace.id) })
+
+  const [createIn, setCreateIn] = useState<Column | null>(null)
 
   const canWrite = can('task:write')
   const canManage = can('project:manage')
@@ -48,12 +53,17 @@ export function BoardPage() {
               workspaceId={workspace.id}
               labels={labels.data ?? []}
               members={members.data ?? []}
+              canWrite={canWrite}
               canManage={canManage}
+              onAddTask={() => setCreateIn(column)}
             />
           ))}
           {canManage && <AddColumn projectId={projectId} />}
         </div>
       </div>
+
+      <CreateTaskModal key={createIn?.id} column={createIn} projectId={projectId} members={members.data ?? []} labels={labels.data ?? []} onClose={() => setCreateIn(null)} />
+      <Outlet context={workspaceContext} />
     </>
   )
 }
@@ -64,10 +74,12 @@ interface ColumnProps {
   workspaceId: string
   labels: Label[]
   members: Member[]
+  canWrite: boolean
   canManage: boolean
+  onAddTask(): void
 }
 
-function BoardColumn({ column, tasks, workspaceId, labels, members, canManage }: ColumnProps) {
+function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, canManage, onAddTask }: ColumnProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const [renaming, setRenaming] = useState(false)
@@ -160,6 +172,12 @@ function BoardColumn({ column, tasks, workspaceId, labels, members, canManage }:
         ))}
         {tasks.length === 0 && <li className={styles.emptyColumn}>No tasks</li>}
       </ol>
+
+      {canWrite && (
+        <button className={`btn btn--ghost btn--sm ${styles.addTask}`} onClick={onAddTask}>
+          <Icon name="plus" size={14} /> Add task
+        </button>
+      )}
     </section>
   )
 }
@@ -191,5 +209,46 @@ function AddColumn({ projectId }: { projectId: string }) {
         <Icon name="plus" size={14} /> Add column
       </button>
     </form>
+  )
+}
+
+const blankTask: TaskInput = { title: '', description: '', assigneeId: null, dueDate: null, priority: 'medium', labelIds: [] }
+
+function CreateTaskModal({ column, projectId, members, labels, onClose }: { column: Column | null; projectId: string; members: Member[]; labels: Label[]; onClose(): void }) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [form, setForm] = useState<TaskInput>(blankTask)
+  const create = useMutation({
+    mutationFn: () => api.tasks.create(projectId, column!.id, form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.board(projectId) })
+      toast('Task created.', 'success')
+      onClose()
+    },
+  })
+  const fieldErrors = create.error instanceof ApiError ? create.error.fieldErrors : {}
+
+  return (
+    <Modal open={column !== null} title={`New task in ${column?.name ?? ''}`} onClose={onClose}>
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault()
+          create.mutate()
+        }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+      >
+        <TaskFields idPrefix="new-task" value={form} onChange={setForm} members={members} labels={labels} errors={fieldErrors} />
+        {Object.keys(fieldErrors).length === 0 && <InlineError error={create.error} />}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <button type="button" className="btn btn--outline" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn btn--primary" disabled={create.isPending}>
+            {create.isPending ? 'Creating…' : 'Create task'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }

@@ -1,0 +1,162 @@
+.drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fields,
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.labelPicker {
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.labelPicker legend {
+  margin-bottom: 0.4rem;
+}
+
+.labelOption {
+  cursor: pointer;
+  padding: 0.25rem 0.65rem;
+  font-weight: 500;
+}
+
+.labelOption:has(:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.labelChecked {
+  border-color: var(--color-text);
+  background-color: var(--color-surface-hover);
+  font-weight: 700;
+}
+
+.inlineActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.readOnly {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.readOnly dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+
+.readOnly dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.description {
+  white-space: pre-wrap;
+}
+
+.labelsRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.comments,
+.activity {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.comments li,
+.activity li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.activity li p {
+  font-size: 0.88rem;
+}
+
+.commentMeta {
+  font-size: 0.85rem;
+}
+
+.commentBody {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mention {
+  color: var(--color-red-text);
+  font-weight: 600;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.composerBox {
+  position: relative;
+}
+
+.suggestions {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 5;
+  list-style: none;
+  min-width: 220px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.25rem;
+}
+
+.suggestions li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.suggestionActive {
+  background-color: var(--color-red-tint);
+}

@@ -3,6 +3,7 @@ import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
 import { BoardPage } from './features/board/BoardPage'
+import { TaskDrawer } from './features/tasks/TaskDrawer'
 import { AppLayout } from './features/workspaces/AppLayout'
 import { ProjectsPage } from './features/workspaces/ProjectsPage'
 import { WorkspaceLayout } from './features/workspaces/WorkspaceLayout'
@@ -71,7 +72,7 @@ export const router = createBrowserRouter([
                 element: <WorkspaceLayout />,
                 children: [
                   { index: true, element: <ProjectsPage /> },
-                  { path: 'p/:projectId', element: <BoardPage /> },
+                  { path: 'p/:projectId', element: <BoardPage />, children: [{ path: 't/:taskId', element: <TaskDrawer /> }] },
                   { path: 'settings', element: <WorkspaceSettingsPage /> },
                 ],
               },
