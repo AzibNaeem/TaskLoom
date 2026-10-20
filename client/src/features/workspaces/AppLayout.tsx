@@ -1,16 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router'
 import { api } from '../../api'
 import { qk } from '../../api/queryKeys'
-import { useAuth, useCurrentUser } from '../../app/auth'
+import { applyTheme, useAuth, useCurrentUser } from '../../app/auth'
+import { useToast } from '../../app/toast'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
 import styles from './layout.module.css'
 
 export function AppLayout() {
   const user = useCurrentUser()
-  const { signOut } = useAuth()
+  const { setUser, signOut } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const match = useMatch('/w/:workspaceId/*')
@@ -26,6 +28,18 @@ export function AppLayout() {
     queryFn: () => api.projects.list(workspaceId!),
     enabled: !!workspaceId && !!workspaces.data?.some((w) => w.id === workspaceId),
   })
+
+  const theme = useMutation({
+    mutationFn: (next: 'light' | 'dark') => api.auth.updateProfile({ theme: next }),
+    onMutate: (next) => applyTheme(next),
+    onSuccess: setUser,
+    onError: () => {
+      applyTheme(user.theme)
+      toast('Could not save your theme preference.', 'error')
+    },
+  })
+
+  const nextTheme = user.theme === 'dark' ? 'light' : 'dark'
 
   return (
     <div className={styles.shell}>
@@ -94,6 +108,9 @@ export function AppLayout() {
         )}
 
         <div className={styles.footer}>
+          <button className="btn btn--ghost btn--sm" onClick={() => theme.mutate(nextTheme)} aria-label={`Switch to ${nextTheme} mode`}>
+            <Icon name={user.theme === 'dark' ? 'sun' : 'moon'} size={16} /> {user.theme === 'dark' ? 'Light' : 'Dark'} mode
+          </button>
           <div className={styles.userRow}>
             <NavLink to="/settings" className={styles.user}>
               <Avatar name={user.name} />
