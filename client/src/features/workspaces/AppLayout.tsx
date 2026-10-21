@@ -85,6 +85,11 @@ export function AppLayout() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to={`/w/${workspaceId}/members`} className={({ isActive }) => (isActive ? styles.active : undefined)}>
+                  <Icon name="users" /> Members
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to={`/w/${workspaceId}/settings`} className={({ isActive }) => (isActive ? styles.active : undefined)}>
                   <Icon name="settings" /> Workspace settings
                 </NavLink>
