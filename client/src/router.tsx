@@ -3,6 +3,7 @@ import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
 import { BoardPage } from './features/board/BoardPage'
+import { InvitePage } from './features/members/InvitePage'
 import { MembersPage } from './features/members/MembersPage'
 import { UserSettingsPage } from './features/settings/UserSettingsPage'
 import { TaskDrawer } from './features/tasks/TaskDrawer'
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: '/register', element: <RegisterPage /> },
         ],
       },
+      { path: '/invite/:token', element: <InvitePage /> },
       {
         element: <RequireAuth />,
         children: [
