@@ -13,6 +13,7 @@ import { Modal } from '../../components/Modal'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
 import { DueBadge, LabelChip, PriorityBadge } from '../board/TaskCard'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
+import { Comments } from './Comments'
 import { TaskFields } from './TaskFields'
 import styles from './tasks.module.css'
 
@@ -62,6 +63,7 @@ export function TaskDrawer() {
             canDelete={canDeleteTask(workspace.myRole, me.id, task.data.createdBy)}
             onDeleted={close}
           />
+          <Comments taskId={taskId} members={members.data ?? []} canComment={can('comment:create')} />
         </div>
       )}
     </Modal>
