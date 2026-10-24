@@ -85,6 +85,14 @@ function TaskEditor({ task, members, labels, canWrite, canDelete, onDeleted }: E
   const [base, setBase] = useState(task)
   const [form, setForm] = useState<TaskInput>(() => toInput(task))
   const dirty = JSON.stringify(form) !== JSON.stringify(toInput(base))
+  const changedElsewhere = task.version > base.version
+
+  // A teammate changed the task: adopt it silently unless we have unsaved edits.
+  // (Adjusting state during render is React's recommended pattern for this.)
+  if (changedElsewhere && !dirty) {
+    setBase(task)
+    setForm(toInput(task))
+  }
 
   const save = useMutation({
     mutationFn: () => api.tasks.update(task.id, { ...form, version: base.version }),
@@ -94,6 +102,9 @@ function TaskEditor({ task, members, labels, canWrite, canDelete, onDeleted }: E
       qc.setQueryData(qk.task(updated.id), updated)
       qc.invalidateQueries({ queryKey: qk.board(updated.projectId) })
       toast('Task saved.', 'success')
+    },
+    onError: (e: ApiError) => {
+      if (e.code === 'CONFLICT') qc.invalidateQueries({ queryKey: qk.task(task.id) })
     },
   })
 
@@ -122,6 +133,30 @@ function TaskEditor({ task, members, labels, canWrite, canDelete, onDeleted }: E
       <p className="muted" style={{ fontSize: '0.82rem' }}>
         Created by {creator} {timeAgo(task.createdAt)} · updated {timeAgo(task.updatedAt)}
       </p>
+
+      {changedElsewhere && dirty && (
+        <div className="alert alert--warning" role="alert">
+          <Icon name="alert" size={16} />
+          <div>
+            <p>A teammate changed this task while you were editing.</p>
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className="btn btn--outline btn--sm"
+                onClick={() => {
+                  setBase(task)
+                  setForm(toInput(task))
+                }}
+              >
+                Load their version
+              </button>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setBase(task)}>
+                Keep mine and overwrite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {canWrite ? (
         <form onSubmit={submit} noValidate className={styles.editor}>

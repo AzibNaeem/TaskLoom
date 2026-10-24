@@ -1,9 +1,10 @@
+import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Outlet, useParams } from 'react-router'
 import { api } from '../../api'
 import { qk } from '../../api/queryKeys'
-import { ApiError, type Column, type Label, type Member, type Task, type TaskInput } from '../../api/types'
+import { ApiError, type Board, type Column, type Label, type Member, type Task, type TaskInput } from '../../api/types'
 import { useToast } from '../../app/toast'
 import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
@@ -14,10 +15,26 @@ import { useWorkspace } from '../workspaces/WorkspaceLayout'
 import { TaskCardContent } from './TaskCard'
 import styles from './board.module.css'
 
+/** Same placement rule as the server, so the optimistic move matches the result. */
+function placeTask(tasks: Task[], taskId: string, columnId: string, afterTaskId: string | null): Task[] {
+  const siblings = tasks.filter((t) => t.columnId === columnId && t.id !== taskId).sort((a, b) => a.position - b.position)
+  let position: number
+  if (afterTaskId === null) position = siblings.length ? siblings[0].position - 1000 : 1000
+  else {
+    const idx = siblings.findIndex((t) => t.id === afterTaskId)
+    if (idx === -1) return tasks
+    const next = siblings[idx + 1]
+    position = next ? (siblings[idx].position + next.position) / 2 : siblings[idx].position + 1000
+  }
+  return tasks.map((t) => (t.id === taskId ? { ...t, columnId, position } : t)).sort((a, b) => a.position - b.position)
+}
+
 export function BoardPage() {
   const workspaceContext = useWorkspace()
   const { workspace, can } = workspaceContext
   const { projectId = '' } = useParams()
+  const qc = useQueryClient()
+  const toast = useToast()
 
   const board = useQuery({ queryKey: qk.board(projectId), queryFn: () => api.board.get(projectId) })
   const members = useQuery({ queryKey: qk.members(workspace.id), queryFn: () => api.members.list(workspace.id) })
@@ -28,10 +45,40 @@ export function BoardPage() {
   const canWrite = can('task:write')
   const canManage = can('project:manage')
 
+  const move = useMutation({
+    mutationFn: (v: { task: Task; columnId: string; afterTaskId: string | null }) =>
+      api.tasks.move(v.task.id, { columnId: v.columnId, afterTaskId: v.afterTaskId, version: v.task.version }),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: qk.board(projectId) })
+      const previous = qc.getQueryData<Board>(qk.board(projectId))
+      qc.setQueryData<Board>(qk.board(projectId), (b) => (b ? { ...b, tasks: placeTask(b.tasks, v.task.id, v.columnId, v.afterTaskId) } : b))
+      return { previous }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.board(projectId) })
+    },
+    onError: (error: ApiError, _v, context) => {
+      if (context?.previous) qc.setQueryData(qk.board(projectId), context.previous)
+      toast(error.message, 'error')
+      if (error.code === 'CONFLICT' || error.code === 'NOT_FOUND') qc.invalidateQueries({ queryKey: qk.board(projectId) })
+    },
+  })
+
   if (board.isPending) return <LoadingState label="Loading board…" />
   if (board.isError) return <ErrorState error={board.error} onRetry={() => board.refetch()} />
 
   const { project, columns, tasks } = board.data
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result
+    if (!destination) return
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return
+    const task = tasks.find((t) => t.id === draggableId)
+    if (!task) return
+    const destTasks = tasks.filter((t) => t.columnId === destination.droppableId && t.id !== draggableId)
+    const afterTaskId = destination.index === 0 ? null : (destTasks[destination.index - 1]?.id ?? null)
+    move.mutate({ task, columnId: destination.droppableId, afterTaskId })
+  }
 
   return (
     <>
@@ -44,22 +91,24 @@ export function BoardPage() {
       )}
 
       <div className={styles.boardWrap}>
-        <div className={styles.board}>
-          {columns.map((column) => (
-            <BoardColumn
-              key={column.id}
-              column={column}
-              tasks={tasks.filter((t) => t.columnId === column.id)}
-              workspaceId={workspace.id}
-              labels={labels.data ?? []}
-              members={members.data ?? []}
-              canWrite={canWrite}
-              canManage={canManage}
-              onAddTask={() => setCreateIn(column)}
-            />
-          ))}
-          {canManage && <AddColumn projectId={projectId} />}
-        </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className={styles.board}>
+            {columns.map((column) => (
+              <BoardColumn
+                key={column.id}
+                column={column}
+                tasks={tasks.filter((t) => t.columnId === column.id)}
+                workspaceId={workspace.id}
+                labels={labels.data ?? []}
+                members={members.data ?? []}
+                canWrite={canWrite}
+                canManage={canManage}
+                onAddTask={() => setCreateIn(column)}
+              />
+            ))}
+            {canManage && <AddColumn projectId={projectId} />}
+          </div>
+        </DragDropContext>
       </div>
 
       <CreateTaskModal key={createIn?.id} column={createIn} projectId={projectId} members={members.data ?? []} labels={labels.data ?? []} onClose={() => setCreateIn(null)} />
@@ -164,14 +213,28 @@ function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, ca
         )}
       </header>
 
-      <ol className={styles.cards}>
-        {tasks.map((task) => (
-          <li key={task.id} className={styles.card}>
-            <TaskCardContent task={task} to={`/w/${workspaceId}/p/${task.projectId}/t/${task.id}`} labels={labels} members={members} />
-          </li>
-        ))}
-        {tasks.length === 0 && <li className={styles.emptyColumn}>No tasks</li>}
-      </ol>
+      <Droppable droppableId={column.id} isDropDisabled={!canWrite}>
+        {(provided, snapshot) => (
+          <ol ref={provided.innerRef} {...provided.droppableProps} className={`${styles.cards} ${snapshot.isDraggingOver ? styles.dropTarget : ''}`}>
+            {tasks.map((task, index) => (
+              <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canWrite}>
+                {(drag, dragSnapshot) => (
+                  <li
+                    ref={drag.innerRef}
+                    {...drag.draggableProps}
+                    {...drag.dragHandleProps}
+                    className={`${styles.card} ${dragSnapshot.isDragging ? styles.dragging : ''}`}
+                  >
+                    <TaskCardContent task={task} to={`/w/${workspaceId}/p/${task.projectId}/t/${task.id}`} labels={labels} members={members} />
+                  </li>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+            {tasks.length === 0 && !snapshot.isDraggingOver && <li className={styles.emptyColumn}>No tasks</li>}
+          </ol>
+        )}
+      </Droppable>
 
       {canWrite && (
         <button className={`btn btn--ghost btn--sm ${styles.addTask}`} onClick={onAddTask}>
