@@ -1,8 +1,9 @@
 import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Outlet, useParams } from 'react-router'
 import { api } from '../../api'
+import { emptyFilters, hasActiveFilters, matchesFilters } from '../../api/filters'
 import { qk } from '../../api/queryKeys'
 import { ApiError, type Board, type Column, type Label, type Member, type Task, type TaskInput } from '../../api/types'
 import { useToast } from '../../app/toast'
@@ -10,8 +11,10 @@ import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { PageHeader } from '../../components/PageHeader'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
+import { ActivityList } from '../tasks/ActivityList'
 import { TaskFields } from '../tasks/TaskFields'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
+import { FilterBar } from './FilterBar'
 import { TaskCardContent } from './TaskCard'
 import styles from './board.module.css'
 
@@ -39,7 +42,10 @@ export function BoardPage() {
   const board = useQuery({ queryKey: qk.board(projectId), queryFn: () => api.board.get(projectId) })
   const members = useQuery({ queryKey: qk.members(workspace.id), queryFn: () => api.members.list(workspace.id) })
   const labels = useQuery({ queryKey: qk.labels(workspace.id), queryFn: () => api.labels.list(workspace.id) })
+  const activity = useQuery({ queryKey: qk.projectActivity(projectId), queryFn: () => api.activity.list({ projectId }) })
 
+  const [filters, setFilters] = useState(emptyFilters)
+  const [showActivity, setShowActivity] = useState(false)
   const [createIn, setCreateIn] = useState<Column | null>(null)
 
   const canWrite = can('task:write')
@@ -64,10 +70,20 @@ export function BoardPage() {
     },
   })
 
+  const visible = useMemo(() => {
+    const byColumn = new Map<string, Task[]>()
+    for (const t of board.data?.tasks ?? []) {
+      if (!matchesFilters(t, filters)) continue
+      byColumn.set(t.columnId, [...(byColumn.get(t.columnId) ?? []), t])
+    }
+    return byColumn
+  }, [board.data, filters])
+
   if (board.isPending) return <LoadingState label="Loading board…" />
   if (board.isError) return <ErrorState error={board.error} onRetry={() => board.refetch()} />
 
   const { project, columns, tasks } = board.data
+  const visibleCount = [...visible.values()].reduce((n, list) => n + list.length, 0)
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result
@@ -75,15 +91,29 @@ export function BoardPage() {
     if (source.droppableId === destination.droppableId && source.index === destination.index) return
     const task = tasks.find((t) => t.id === draggableId)
     if (!task) return
-    const destTasks = tasks.filter((t) => t.columnId === destination.droppableId && t.id !== draggableId)
-    const afterTaskId = destination.index === 0 ? null : (destTasks[destination.index - 1]?.id ?? null)
+    const destVisible = (visible.get(destination.droppableId) ?? []).filter((t) => t.id !== draggableId)
+    const afterTaskId = destination.index === 0 ? null : (destVisible[destination.index - 1]?.id ?? null)
     move.mutate({ task, columnId: destination.droppableId, afterTaskId })
   }
 
   return (
     <>
-      <PageHeader title={project.name} subtitle={project.description || undefined} />
+      <PageHeader
+        title={project.name}
+        subtitle={project.description || undefined}
+        actions={
+          <button className="btn btn--outline" aria-pressed={showActivity} onClick={() => setShowActivity((s) => !s)}>
+            <Icon name="activity" size={16} /> Activity
+          </button>
+        }
+      />
 
+      <FilterBar value={filters} onChange={setFilters} members={members.data ?? []} labels={labels.data ?? []} />
+      {hasActiveFilters(filters) && (
+        <p className="muted" role="status">
+          Showing {visibleCount} of {tasks.length} tasks.
+        </p>
+      )}
       {!canWrite && (
         <p className="alert alert--info">
           <Icon name="alert" size={16} /> You are a Viewer: you can browse the board but not change it.
@@ -97,7 +127,8 @@ export function BoardPage() {
               <BoardColumn
                 key={column.id}
                 column={column}
-                tasks={tasks.filter((t) => t.columnId === column.id)}
+                tasks={visible.get(column.id) ?? []}
+                totalInColumn={tasks.filter((t) => t.columnId === column.id).length}
                 workspaceId={workspace.id}
                 labels={labels.data ?? []}
                 members={members.data ?? []}
@@ -109,6 +140,18 @@ export function BoardPage() {
             {canManage && <AddColumn projectId={projectId} />}
           </div>
         </DragDropContext>
+
+        {showActivity && (
+          <aside className={`card ${styles.activityPanel}`} aria-label="Project activity">
+            <div className={styles.activityHeader}>
+              <h2>Activity</h2>
+              <button className="btn btn--ghost btn--icon" aria-label="Close activity" onClick={() => setShowActivity(false)}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+            <ActivityList query={activity} />
+          </aside>
+        )}
       </div>
 
       <CreateTaskModal key={createIn?.id} column={createIn} projectId={projectId} members={members.data ?? []} labels={labels.data ?? []} onClose={() => setCreateIn(null)} />
@@ -120,6 +163,7 @@ export function BoardPage() {
 interface ColumnProps {
   column: Column
   tasks: Task[]
+  totalInColumn: number
   workspaceId: string
   labels: Label[]
   members: Member[]
@@ -128,7 +172,7 @@ interface ColumnProps {
   onAddTask(): void
 }
 
-function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, canManage, onAddTask }: ColumnProps) {
+function BoardColumn({ column, tasks, totalInColumn, workspaceId, labels, members, canWrite, canManage, onAddTask }: ColumnProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const [renaming, setRenaming] = useState(false)
@@ -183,7 +227,7 @@ function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, ca
         ) : (
           <>
             <h2 className={styles.columnTitle}>{column.name}</h2>
-            <span className={styles.count}>{tasks.length}</span>
+            <span className={styles.count}>{tasks.length === totalInColumn ? totalInColumn : `${tasks.length}/${totalInColumn}`}</span>
             {canManage && (
               <span className={styles.columnActions}>
                 <button
@@ -201,7 +245,7 @@ function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, ca
                   aria-label={`Delete ${column.name}`}
                   disabled={remove.isPending}
                   onClick={() => {
-                    if (tasks.length > 0) toast('Move or delete the tasks in this column first.', 'warning')
+                    if (totalInColumn > 0) toast('Move or delete the tasks in this column first.', 'warning')
                     else if (confirm(`Delete the "${column.name}" column?`)) remove.mutate()
                   }}
                 >
@@ -231,7 +275,7 @@ function BoardColumn({ column, tasks, workspaceId, labels, members, canWrite, ca
               </Draggable>
             ))}
             {provided.placeholder}
-            {tasks.length === 0 && !snapshot.isDraggingOver && <li className={styles.emptyColumn}>No tasks</li>}
+            {tasks.length === 0 && !snapshot.isDraggingOver && <li className={styles.emptyColumn}>{totalInColumn > 0 ? 'No matching tasks' : 'No tasks'}</li>}
           </ol>
         )}
       </Droppable>

@@ -13,6 +13,7 @@ import { Modal } from '../../components/Modal'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
 import { DueBadge, LabelChip, PriorityBadge } from '../board/TaskCard'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
+import { ActivityList } from './ActivityList'
 import { Comments } from './Comments'
 import { TaskFields } from './TaskFields'
 import styles from './tasks.module.css'
@@ -42,6 +43,7 @@ export function TaskDrawer() {
   })
   const members = useQuery({ queryKey: qk.members(workspace.id), queryFn: () => api.members.list(workspace.id) })
   const labels = useQuery({ queryKey: qk.labels(workspace.id), queryFn: () => api.labels.list(workspace.id) })
+  const activity = useQuery({ queryKey: qk.taskActivity(taskId), queryFn: () => api.activity.list({ taskId }) })
 
   return (
     <Modal open variant="drawer" title={task.data?.title ?? 'Task'} onClose={close}>
@@ -64,6 +66,10 @@ export function TaskDrawer() {
             onDeleted={close}
           />
           <Comments taskId={taskId} members={members.data ?? []} canComment={can('comment:create')} />
+          <section className={styles.section}>
+            <h3>History</h3>
+            <ActivityList query={activity} />
+          </section>
         </div>
       )}
     </Modal>
