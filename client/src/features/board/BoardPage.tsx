@@ -1,16 +1,18 @@
 import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Outlet, useParams } from 'react-router'
-import { api } from '../../api'
+import { api, realtime } from '../../api'
 import { emptyFilters, hasActiveFilters, matchesFilters } from '../../api/filters'
 import { qk } from '../../api/queryKeys'
 import { ApiError, type Board, type Column, type Label, type Member, type Task, type TaskInput } from '../../api/types'
+import { useCurrentUser } from '../../app/auth'
 import { useToast } from '../../app/toast'
 import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { PageHeader } from '../../components/PageHeader'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
+import { upsertTask } from '../realtime/useWorkspaceRealtime'
 import { ActivityList } from '../tasks/ActivityList'
 import { TaskFields } from '../tasks/TaskFields'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
@@ -36,6 +38,7 @@ export function BoardPage() {
   const workspaceContext = useWorkspace()
   const { workspace, can } = workspaceContext
   const { projectId = '' } = useParams()
+  const me = useCurrentUser()
   const qc = useQueryClient()
   const toast = useToast()
 
@@ -47,6 +50,19 @@ export function BoardPage() {
   const [filters, setFilters] = useState(emptyFilters)
   const [showActivity, setShowActivity] = useState(false)
   const [createIn, setCreateIn] = useState<Column | null>(null)
+  const [flash, setFlash] = useState<ReadonlySet<string>>(new Set())
+
+  // Briefly highlight cards changed by other people.
+  useEffect(
+    () =>
+      realtime.onEvent((e) => {
+        const id = e.data.task?.id
+        if (!id || e.projectId !== projectId || e.actorId === me.id) return
+        setFlash((s) => new Set(s).add(id))
+        setTimeout(() => setFlash((s) => new Set([...s].filter((x) => x !== id))), 2500)
+      }),
+    [projectId, me.id],
+  )
 
   const canWrite = can('task:write')
   const canManage = can('project:manage')
@@ -60,8 +76,9 @@ export function BoardPage() {
       qc.setQueryData<Board>(qk.board(projectId), (b) => (b ? { ...b, tasks: placeTask(b.tasks, v.task.id, v.columnId, v.afterTaskId) } : b))
       return { previous }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.board(projectId) })
+    onSuccess: (task) => {
+      qc.setQueryData<Board>(qk.board(projectId), (b) => upsertTask(b, task))
+      qc.setQueryData(qk.task(task.id), task)
     },
     onError: (error: ApiError, _v, context) => {
       if (context?.previous) qc.setQueryData(qk.board(projectId), context.previous)
@@ -134,6 +151,7 @@ export function BoardPage() {
                 members={members.data ?? []}
                 canWrite={canWrite}
                 canManage={canManage}
+                flash={flash}
                 onAddTask={() => setCreateIn(column)}
               />
             ))}
@@ -169,10 +187,11 @@ interface ColumnProps {
   members: Member[]
   canWrite: boolean
   canManage: boolean
+  flash: ReadonlySet<string>
   onAddTask(): void
 }
 
-function BoardColumn({ column, tasks, totalInColumn, workspaceId, labels, members, canWrite, canManage, onAddTask }: ColumnProps) {
+function BoardColumn({ column, tasks, totalInColumn, workspaceId, labels, members, canWrite, canManage, flash, onAddTask }: ColumnProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const [renaming, setRenaming] = useState(false)
@@ -267,7 +286,7 @@ function BoardColumn({ column, tasks, totalInColumn, workspaceId, labels, member
                     ref={drag.innerRef}
                     {...drag.draggableProps}
                     {...drag.dragHandleProps}
-                    className={`${styles.card} ${dragSnapshot.isDragging ? styles.dragging : ''}`}
+                    className={`${styles.card} ${dragSnapshot.isDragging ? styles.dragging : ''} ${flash.has(task.id) ? styles.flash : ''}`}
                   >
                     <TaskCardContent task={task} to={`/w/${workspaceId}/p/${task.projectId}/t/${task.id}`} labels={labels} members={members} />
                   </li>
@@ -327,8 +346,8 @@ function CreateTaskModal({ column, projectId, members, labels, onClose }: { colu
   const [form, setForm] = useState<TaskInput>(blankTask)
   const create = useMutation({
     mutationFn: () => api.tasks.create(projectId, column!.id, form),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.board(projectId) })
+    onSuccess: (task) => {
+      qc.setQueryData<Board>(qk.board(projectId), (b) => upsertTask(b, task))
       toast('Task created.', 'success')
       onClose()
     },

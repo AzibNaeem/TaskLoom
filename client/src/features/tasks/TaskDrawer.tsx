@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
 import { DueBadge, LabelChip, PriorityBadge } from '../board/TaskCard'
+import { upsertTask } from '../realtime/useWorkspaceRealtime'
 import { useWorkspace } from '../workspaces/WorkspaceLayout'
 import { ActivityList } from './ActivityList'
 import { Comments } from './Comments'
@@ -106,7 +107,7 @@ function TaskEditor({ task, members, labels, canWrite, canDelete, onDeleted }: E
       setBase(updated)
       setForm(toInput(updated))
       qc.setQueryData(qk.task(updated.id), updated)
-      qc.invalidateQueries({ queryKey: qk.board(updated.projectId) })
+      qc.setQueryData<Board>(qk.board(updated.projectId), (b) => upsertTask(b, updated))
       toast('Task saved.', 'success')
     },
     onError: (e: ApiError) => {

@@ -8,6 +8,7 @@ import { useToast } from '../../app/toast'
 import { Icon } from '../../components/Icon'
 import { PageHeader } from '../../components/PageHeader'
 import { ErrorState, InlineError, LoadingState } from '../../components/States'
+import { forgetWorkspace } from '../realtime/useWorkspaceRealtime'
 import { useWorkspace } from './WorkspaceLayout'
 import styles from './workspaces.module.css'
 
@@ -95,7 +96,7 @@ export function WorkspaceSettingsPage() {
   const leaveOrDelete = useMutation({
     mutationFn: () => (workspace.myRole === 'owner' ? api.workspaces.remove(workspace.id) : api.workspaces.leave(workspace.id)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.workspaces })
+      forgetWorkspace(qc, workspace.id)
       toast(workspace.myRole === 'owner' ? 'Workspace deleted.' : 'You left the workspace.', 'success')
       navigate('/', { replace: true })
     },
