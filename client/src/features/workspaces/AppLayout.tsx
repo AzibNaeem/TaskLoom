@@ -7,6 +7,7 @@ import { applyTheme, useAuth, useCurrentUser } from '../../app/auth'
 import { useToast } from '../../app/toast'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
+import { ConnectionBanner, ConnectionStatus } from '../realtime/ConnectionStatus'
 import styles from './layout.module.css'
 
 export function AppLayout() {
@@ -48,6 +49,7 @@ export function AppLayout() {
           <Icon name="menu" />
         </button>
         <span className={styles.brand}>Taskloom</span>
+        <ConnectionStatus />
       </header>
 
       <nav className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`} aria-label="Main">
@@ -118,6 +120,7 @@ export function AppLayout() {
         )}
 
         <div className={styles.footer}>
+          <ConnectionStatus />
           <button className="btn btn--ghost btn--sm" onClick={() => theme.mutate(nextTheme)} aria-label={`Switch to ${nextTheme} mode`}>
             <Icon name={user.theme === 'dark' ? 'sun' : 'moon'} size={16} /> {user.theme === 'dark' ? 'Light' : 'Dark'} mode
           </button>
@@ -138,6 +141,7 @@ export function AppLayout() {
       {menuOpen && <div className={styles.scrim} onClick={() => setMenuOpen(false)} />}
 
       <main className={styles.main}>
+        <ConnectionBanner />
         <Outlet />
       </main>
     </div>

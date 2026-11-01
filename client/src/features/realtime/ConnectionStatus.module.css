@@ -1,0 +1,20 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.success {
+  color: var(--color-success);
+}
+.info {
+  color: var(--color-info);
+}
+.warning {
+  color: var(--color-warning);
+}
+.error {
+  color: var(--color-error);
+}
