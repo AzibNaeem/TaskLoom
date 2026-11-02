@@ -1,4 +1,6 @@
 import { Link, Navigate, Outlet, createBrowserRouter, useLocation } from 'react-router'
+import { isMockMode } from './api'
+import { MockToolsPanel } from './api/mock/MockToolsPanel'
 import { useAuth } from './app/auth'
 import { EmptyState, ErrorState, LoadingState } from './components/States'
 import { LoginPage, RegisterPage } from './features/auth/AuthPages'
@@ -17,7 +19,12 @@ function Root() {
   const { state, retry } = useAuth()
   if (state.status === 'loading') return <LoadingState label="Starting Taskloom…" />
   if (state.status === 'error') return <ErrorState error={state.error} onRetry={retry} />
-  return <Outlet />
+  return (
+    <>
+      <Outlet />
+      {isMockMode && <MockToolsPanel />}
+    </>
+  )
 }
 
 function RequireAuth() {
